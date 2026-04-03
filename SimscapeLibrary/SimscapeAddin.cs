@@ -1,54 +1,117 @@
 ﻿// SimscapeAddin.cs
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Simulation;
 
 namespace CommunityMaker.Simscape
 {
+    /// <summary>
+    /// Base class for Simscape add-in libraries that extend simulation capabilities.
+    /// </summary>
     public abstract class SimscapeAddin
     {
-        protected SimscapeAddin(
-            SimscapeAddinKind kind,
-            string displayName,
-            IReadOnlyList<string> requiredMatlabProducts,
-            IReadOnlyList<string>? tags = null)
+        #region Properties
+
+        // Identification
+        public SimscapeAddinKind Kind { get; }
+        public string DisplayName { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        // Requirements
+        public List<string> RequiredMatlabProducts { get; set; } = [];
+        public string MinimumMatlabVersion { get; set; } = string.Empty;
+
+        // Classification
+        public List<string> Tags { get; set; } = [];
+        public List<DomainType> SupportedDomains { get; set; } = [];
+        public List<string> ComponentLibraries { get; set; } = [];
+
+        // State
+        public bool IsInstalled { get; set; }
+        public bool IsLicensed { get; set; }
+
+        #endregion
+
+        #region Constructors
+
+        protected SimscapeAddin(SimscapeAddinKind kind) => Kind = kind;
+
+        protected SimscapeAddin(SimscapeAddinKind kind, string displayName, List<string> requiredProducts)
         {
             Kind = kind;
-            DisplayName = displayName ?? kind.ToString();
-            RequiredMatlabProducts = requiredMatlabProducts ?? Array.Empty<string>();
-            Tags = tags ?? Array.Empty<string>();
+            DisplayName = displayName;
+            RequiredMatlabProducts = requiredProducts ?? [];
         }
 
-        public SimscapeAddinKind Kind { get; }
-        public string DisplayName { get; }
-        public IReadOnlyList<string> RequiredMatlabProducts { get; }
-        public IReadOnlyList<string> Tags { get; }
+        #endregion
+
+        #region Methods
 
         /// <summary>
-        /// Generates a MATLAB snippet that checks whether the required products are installed/licensed.
-        /// Note: product IDs/names can be tuned to your environment.
+        /// Checks whether all required products are available.
         /// </summary>
-        public virtual string ToMatlabLicenseCheckScript(string resultVarName = "isAvailable")
-        {
-            // Uses ver + license('test', ...) pattern. This is intentionally simple.
-            // You can swap to matlab.addons.installedAddons or other APIs if desired.
-            var lines = new List<string>
-            {
-                $"{resultVarName} = true;",
-                "v = ver;"
-            };
+        public virtual bool CheckAvailability() => IsInstalled && IsLicensed;
 
-            foreach (var p in RequiredMatlabProducts)
+        /// <summary>
+        /// Registers a component library for this add-in.
+        /// </summary>
+        public void AddComponentLibrary(string libraryPath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(libraryPath);
+            if (!ComponentLibraries.Contains(libraryPath))
+                ComponentLibraries.Add(libraryPath);
+        }
+
+        /// <summary>
+        /// Removes a component library from this add-in.
+        /// </summary>
+        public bool RemoveComponentLibrary(string libraryPath) =>
+            ComponentLibraries.Remove(libraryPath);
+
+        /// <summary>
+        /// Adds a supported physical domain to this add-in.
+        /// </summary>
+        public void AddSupportedDomain(DomainType domain)
+        {
+            if (!SupportedDomains.Contains(domain))
+                SupportedDomains.Add(domain);
+        }
+
+        /// <summary>
+        /// Checks whether this add-in supports the given domain.
+        /// </summary>
+        public bool SupportsDomain(DomainType domain) =>
+            SupportedDomains.Contains(domain);
+
+        /// <summary>
+        /// Generates a MATLAB script that checks required product availability.
+        /// </summary>
+        public virtual string ToMatlabLicenseCheckScript(string resultVar = "isAvailable")
+        {
+            var lines = new List<string> { $"{resultVar} = true;", "v = ver;" };
+
+            foreach (var product in RequiredMatlabProducts)
             {
-                // "Simscape Multibody" etc
-                lines.Add(
-                    $"{resultVarName} = {resultVarName} && any(strcmp({{v.Name}}, '{EscapeMatlab(p)}'));");
+                var escaped = product.Replace("'", "''");
+                lines.Add($"{resultVar} = {resultVar} && any(strcmp({{v.Name}}, '{escaped}'));");
             }
 
             return string.Join(Environment.NewLine, lines);
         }
 
-        private static string EscapeMatlab(string s) => s.Replace("'", "''");
+        /// <summary>
+        /// Validates that the add-in has a name and at least one required product.
+        /// </summary>
+        public virtual bool Validate() =>
+            !string.IsNullOrWhiteSpace(DisplayName) &&
+            RequiredMatlabProducts.Count > 0;
+
+        #endregion
     }
+
+    #region Supporting Types
 
     public enum SimscapeAddinKind
     {
@@ -61,4 +124,6 @@ namespace CommunityMaker.Simscape
         Thermal,
         PowerSystems
     }
+
+    #endregion
 }
