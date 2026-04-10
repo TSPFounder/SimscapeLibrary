@@ -25,8 +25,8 @@ namespace Simulation
         // Through variable (flow through the branch, e.g., current in A, force in N)
         public double ThroughValue { get; set; }
 
-        // Owning element
-        public SimscapeElement? OwningElement { get; set; }
+        // Owning component
+        public SimscapeComponent? OwningComponent { get; set; }
 
         // Branch parameters
         public List<SimscapeParameter> Parameters { get; set; } = [];

@@ -5,7 +5,7 @@ using SimscapeLibrary;
 namespace Simulation
 {
     /// <summary>
-    /// Represents a Simscape model containing elements, ports, and solver settings.
+    /// Represents a Simscape model containing components, ports, and solver settings.
     /// </summary>
     public class SimscapeModel
     {
@@ -29,9 +29,9 @@ namespace Simulation
         // Domain
         public SimscapeDomain? Domain { get; set; }
 
-        // Elements
-        public SimscapeElement? CurrentSimscapeElement { get; set; }
-        public List<SimscapeElement> Elements { get; set; } = [];
+        // Components
+        public SimscapeComponent? CurrentSimscapeComponent { get; set; }
+        public List<SimscapeComponent> Components { get; set; } = [];
 
         // Ports
         public List<SimscapePort> Ports { get; set; } = [];
@@ -74,20 +74,20 @@ namespace Simulation
         #region Methods
 
         /// <summary>
-        /// Adds an element to the model.
+        /// Adds a component to the model.
         /// </summary>
-        public void AddElement(SimscapeElement element)
+        public void AddComponent(SimscapeComponent component)
         {
-            ArgumentNullException.ThrowIfNull(element);
-            if (!Elements.Contains(element)) Elements.Add(element);
-                Elements.Add(element);
+            ArgumentNullException.ThrowIfNull(component);
+            if (!Components.Contains(component))
+                Components.Add(component);
         }
 
         /// <summary>
-        /// Removes an element from the model.
+        /// Removes a component from the model.
         /// </summary>
-        public bool RemoveElement(SimscapeElement element) =>
-            Elements.Remove(element);
+        public bool RemoveComponent(SimscapeComponent component) =>
+            Components.Remove(component);
 
         /// <summary>
         /// Adds a port to the model.
@@ -98,17 +98,17 @@ namespace Simulation
         }
 
         /// <summary>
-        /// Finds an element by name.
+        /// Finds a component by name.
         /// </summary>
-        public SimscapeElement? FindElement(string name) =>
-            Elements.Find(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
+        public SimscapeComponent? FindComponent(string name) =>
+            Components.Find(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
-        /// Validates the model has a name, at least one element, and a valid domain.
+        /// Validates the model has a name, at least one component, and a valid domain.
         /// </summary>
         public bool Validate() =>
             !string.IsNullOrWhiteSpace(Name) &&
-            Elements.Count > 0 &&
+            Components.Count > 0 &&
             (Domain?.Validate() ?? true);
 
         /// <summary>
@@ -124,11 +124,4 @@ namespace Simulation
 
         #endregion
     }
-
-    #region Supporting Types
-
-    
-    
-
-    #endregion
 }

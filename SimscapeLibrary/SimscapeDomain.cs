@@ -22,8 +22,8 @@ namespace Simulation
         // Domain parameters
         public List<DomainParameter> Parameters { get; set; } = [];
 
-        // Elements belonging to this domain
-        public List<SimscapeElement> Elements { get; set; } = [];
+        // Components belonging to this domain
+        public List<SimscapeComponent> Components { get; set; } = [];
 
         #region Constructors
 
@@ -41,20 +41,20 @@ namespace Simulation
         #region Methods
 
         /// <summary>
-        /// Adds an element to this domain.
+        /// Adds a component to this domain.
         /// </summary>
-        public void AddElement(SimscapeElement element)
+        public void AddComponent(SimscapeComponent component)
         {
-            ArgumentNullException.ThrowIfNull(element);
-            if (!Elements.Contains(element))
-                Elements.Add(element);
+            ArgumentNullException.ThrowIfNull(component);
+            if (!Components.Contains(component))
+                Components.Add(component);
         }
 
         /// <summary>
-        /// Removes an element from this domain.
+        /// Removes a component from this domain.
         /// </summary>
-        public bool RemoveElement(SimscapeElement element) =>
-            Elements.Remove(element);
+        public bool RemoveComponent(SimscapeComponent component) =>
+            Components.Remove(component);
 
         /// <summary>
         /// Adds a parameter definition to this domain.

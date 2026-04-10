@@ -12,15 +12,15 @@ using CommunityMaker.Simscape;
     .WithLibraryType(SimscapeModel.LibraryTypeEnum.Driveline)
     .WithSolver(SimscapeModel.SolverType.VariableStep)
     .WithSimulationTime(0, 30.0)
-    .AddElement("Engine", SimscapeElement.ElementType.Source, e =>
+    .AddComponent("Engine", SimscapeComponent.ComponentType.Source, c =>
     {
-        e.AddPort("shaft_out", PortDirection.Output);
-        e.AddParameter("MaxTorque", "N*m", 250.0);
+        c.AddPort("shaft_out", PortDirection.Output);
+        c.AddParameter("MaxTorque", "N*m", 250.0);
     })
-    .AddElement("Transmission", SimscapeElement.ElementType.Transformer, e =>
+    .AddComponent("Transmission", SimscapeComponent.ComponentType.Transformer, c =>
     {
-        e.AddPort("shaft_in", PortDirection.Input);
-        e.AddPort("shaft_out", PortDirection.Output);
+        c.AddPort("shaft_in", PortDirection.Input);
+        c.AddPort("shaft_out", PortDirection.Output);
     })
     .Connect("Engine", "Transmission")
     .UseDriveline(dl =>
@@ -167,33 +167,33 @@ namespace SimscapeLibrary
 
         #endregion
 
-        #region Elements
+        #region Components
 
         /// <summary>
-        /// Adds an element to the model with optional inline configuration.
+        /// Adds a component to the model with optional inline configuration.
         /// </summary>
-        public SimscapeModelBuilder AddElement(
+        public SimscapeModelBuilder AddComponent(
             string name,
-            SimscapeElement.ElementType type,
-            Action<SimscapeElement>? configure = null)
+            SimscapeComponent.ComponentType type,
+            Action<SimscapeComponent>? configure = null)
         {
-            var element = new SimscapeElement(name, type)
+            var component = new SimscapeComponent(name, type)
             {
                 Domain = _model.Domain,
                 CurrentSimscapeModel = _model
             };
-            configure?.Invoke(element);
-            _model.AddElement(element);
+            configure?.Invoke(component);
+            _model.AddComponent(component);
             return this;
         }
 
         /// <summary>
-        /// Adds a pre-built element to the model.
+        /// Adds a pre-built component to the model.
         /// </summary>
-        public SimscapeModelBuilder AddElement(SimscapeElement element)
+        public SimscapeModelBuilder AddComponent(SimscapeComponent component)
         {
-            element.CurrentSimscapeModel = _model;
-            _model.AddElement(element);
+            component.CurrentSimscapeModel = _model;
+            _model.AddComponent(component);
             return this;
         }
 
@@ -224,11 +224,11 @@ namespace SimscapeLibrary
         #region Connections
 
         /// <summary>
-        /// Connects two elements by name. Connections are resolved at build time.
+        /// Connects two components by name. Connections are resolved at build time.
         /// </summary>
-        public SimscapeModelBuilder Connect(string elementNameA, string elementNameB)
+        public SimscapeModelBuilder Connect(string componentNameA, string componentNameB)
         {
-            _deferredConnections.Add(new BuilderConnection(elementNameA, elementNameB));
+            _deferredConnections.Add(new BuilderConnection(componentNameA, componentNameB));
             return this;
         }
 
@@ -345,7 +345,7 @@ namespace SimscapeLibrary
             _model.Path = string.Empty;
             _model.Domain = null;
             _model.LibraryType = SimscapeModel.LibraryTypeEnum.General;
-            _model.Elements.Clear();
+            _model.Components.Clear();
             _model.Ports.Clear();
             _model.ResetSimulationParameters();
             _addins.Clear();
@@ -362,13 +362,13 @@ namespace SimscapeLibrary
         {
             foreach (var conn in _deferredConnections)
             {
-                var a = _model.FindElement(conn.ElementNameA);
-                var b = _model.FindElement(conn.ElementNameB);
+                var a = _model.FindComponent(conn.ComponentNameA);
+                var b = _model.FindComponent(conn.ComponentNameB);
 
                 if (a is null)
-                    _errors.Add($"Connection error: element '{conn.ElementNameA}' not found.");
+                    _errors.Add($"Connection error: component '{conn.ComponentNameA}' not found.");
                 if (b is null)
-                    _errors.Add($"Connection error: element '{conn.ElementNameB}' not found.");
+                    _errors.Add($"Connection error: component '{conn.ComponentNameB}' not found.");
 
                 if (a is not null && b is not null)
                     a.Connect(b);
@@ -380,8 +380,8 @@ namespace SimscapeLibrary
             if (string.IsNullOrWhiteSpace(_model.Name))
                 _errors.Add("Model name is required.");
 
-            if (_model.Elements.Count == 0)
-                _errors.Add("Model must contain at least one element.");
+            if (_model.Components.Count == 0)
+                _errors.Add("Model must contain at least one component.");
 
             if (_model.Domain is not null && !_model.Domain.Validate())
                 _errors.Add("Model domain is incomplete (missing Across/Through variable definitions).");
@@ -392,10 +392,10 @@ namespace SimscapeLibrary
             if (_model.MaxStepSize <= 0)
                 _errors.Add("MaxStepSize must be greater than zero.");
 
-            foreach (var element in _model.Elements)
+            foreach (var component in _model.Components)
             {
-                if (string.IsNullOrWhiteSpace(element.Name))
-                    _errors.Add("An element is missing a name.");
+                if (string.IsNullOrWhiteSpace(component.Name))
+                    _errors.Add("A component is missing a name.");
             }
         }
 
@@ -417,12 +417,12 @@ namespace SimscapeLibrary
     #region Supporting Types
 
     /// <summary>
-    /// Represents a deferred element-to-element connection resolved at build time.
+    /// Represents a deferred component-to-component connection resolved at build time.
     /// </summary>
-    internal sealed class BuilderConnection(string elementNameA, string elementNameB)
+    internal sealed class BuilderConnection(string componentNameA, string componentNameB)
     {
-        public string ElementNameA { get; } = elementNameA;
-        public string ElementNameB { get; } = elementNameB;
+        public string ComponentNameA { get; } = componentNameA;
+        public string ComponentNameB { get; } = componentNameB;
     }
 
     #endregion

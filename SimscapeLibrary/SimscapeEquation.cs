@@ -32,8 +32,8 @@ namespace Simulation
         public string Condition { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
 
-        // Owning element
-        public SimscapeElement? OwningElement { get; set; }
+        // Owning component
+        public SimscapeComponent? OwningComponent { get; set; }
 
         #endregion
 
