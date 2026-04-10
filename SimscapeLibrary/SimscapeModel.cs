@@ -36,6 +36,9 @@ namespace Simulation
         // Ports
         public List<SimscapePort> Ports { get; set; } = [];
 
+        // File
+        public SimscapeModelFile? ModelFile { get; set; }
+
         #endregion
 
         #region Enumerations

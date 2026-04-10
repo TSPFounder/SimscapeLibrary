@@ -190,5 +190,203 @@ namespace CommunityMaker.Simscape
         DiscBrake
     }
 
+    /// <summary>
+    /// All blocks available in the Simscape Driveline library.
+    /// </summary>
+    public enum DrivelineBlockType
+    {
+        // === Gears ===
+
+        /// <summary>Simple gear with fixed ratio between two shafts.</summary>
+        SimpleGear,
+        /// <summary>Bevel gear with intersecting shaft axes.</summary>
+        BevelGear,
+        /// <summary>Worm gear with perpendicular non-intersecting axes and high reduction.</summary>
+        WormGear,
+        /// <summary>Rack and pinion converting rotational to translational motion.</summary>
+        RackAndPinion,
+        /// <summary>Planetary gear set with sun, planet, and ring members.</summary>
+        PlanetaryGear,
+        /// <summary>Ravigneaux dual-planetary gear set for automatic transmissions.</summary>
+        RavigneauxGear,
+        /// <summary>Simpson planetary gear set commonly used in automatic transmissions.</summary>
+        SimpsonGear,
+        /// <summary>Lepelletier gear set combining Ravigneaux with a simple planetary.</summary>
+        LepelletierGear,
+        /// <summary>Compound planetary gear set with dual planet gears.</summary>
+        CompoundPlanetaryGear,
+        /// <summary>Ring-planet subassembly of a planetary gear set.</summary>
+        RingPlanetGear,
+        /// <summary>Sun-planet subassembly of a planetary gear set.</summary>
+        SunPlanetGear,
+        /// <summary>Sun-planet bevel gear subassembly.</summary>
+        SunPlanetBevel,
+
+        // === Couplings and Differentials ===
+
+        /// <summary>Open differential splitting torque between two output shafts.</summary>
+        OpenDifferential,
+        /// <summary>Limited-slip differential with torque-biasing capability.</summary>
+        LimitedSlipDifferential,
+        /// <summary>Torsen-type torque-sensing differential.</summary>
+        TorsenDifferential,
+        /// <summary>Viscous coupling transferring torque via fluid shear.</summary>
+        ViscousCoupling,
+        /// <summary>Flexible shaft coupling with torsional compliance.</summary>
+        FlexibleShaftCoupling,
+        /// <summary>Universal joint (Hooke joint) coupling two shafts at an angle.</summary>
+        UniversalJoint,
+        /// <summary>Constant-velocity joint for angled shaft coupling without speed variation.</summary>
+        ConstantVelocityJoint,
+
+        // === Clutches and Brakes ===
+
+        /// <summary>Friction clutch with controllable normal force.</summary>
+        FrictionClutch,
+        /// <summary>Dog clutch for positive engagement without slip.</summary>
+        DogClutch,
+        /// <summary>Cone clutch using conical friction surfaces.</summary>
+        ConeClutch,
+        /// <summary>Unidirectional clutch (one-way / overrunning clutch).</summary>
+        UnidirectionalClutch,
+        /// <summary>Band brake applying friction via a band wrapped around a drum.</summary>
+        BandBrake,
+        /// <summary>Disc brake with caliper-applied friction pads.</summary>
+        DiscBrake,
+        /// <summary>Drum brake with internally expanding shoes.</summary>
+        DrumBrake,
+        /// <summary>Double-sided friction clutch.</summary>
+        DoubleSidedFrictionClutch,
+        /// <summary>Loaded-contact rotational friction between surfaces.</summary>
+        LoadedContactRotationalFriction,
+        /// <summary>Loaded-contact translational friction between surfaces.</summary>
+        LoadedContactTranslationalFriction,
+
+        // === Torque Converters ===
+
+        /// <summary>Torque converter with impeller, turbine, and stator.</summary>
+        TorqueConverter,
+        /// <summary>Torque converter with lock-up clutch for direct coupling.</summary>
+        TorqueConverterWithLockup,
+
+        // === Engines and Motors ===
+
+        /// <summary>Generic engine with torque-speed lookup table.</summary>
+        GenericEngine,
+        /// <summary>Spark-ignition (gasoline/petrol) engine model.</summary>
+        SparkIgnitionEngine,
+        /// <summary>Diesel (compression-ignition) engine model.</summary>
+        DieselEngine,
+        /// <summary>Mapped motor model using efficiency maps.</summary>
+        MappedMotor,
+
+        // === Tires and Road ===
+
+        /// <summary>Tire with longitudinal slip dynamics (Magic Formula).</summary>
+        TireMagicFormula,
+        /// <summary>Tire with simple longitudinal force model.</summary>
+        TireSimple,
+        /// <summary>Tire-road interaction block (Fiala model).</summary>
+        TireFiala,
+        /// <summary>Longitudinal wheel with tire compliance.</summary>
+        LongitudinalWheel,
+        /// <summary>Tire with combined slip (lateral + longitudinal).</summary>
+        TireCombinedSlip,
+
+        // === Vehicle Components ===
+
+        /// <summary>Vehicle body with longitudinal dynamics (mass, drag, grade).</summary>
+        VehicleBody,
+        /// <summary>Two-axle vehicle model for longitudinal dynamics studies.</summary>
+        VehicleTwoAxle,
+
+        // === Inertias and Compliances ===
+
+        /// <summary>Rotational inertia element.</summary>
+        RotationalInertia,
+        /// <summary>Translational mass element.</summary>
+        TranslationalMass,
+        /// <summary>Rotational spring (torsional compliance).</summary>
+        RotationalSpring,
+        /// <summary>Rotational damper (torsional viscous friction).</summary>
+        RotationalDamper,
+        /// <summary>Rotational spring-damper combined element.</summary>
+        RotationalSpringDamper,
+        /// <summary>Translational spring element.</summary>
+        TranslationalSpring,
+        /// <summary>Translational damper element.</summary>
+        TranslationalDamper,
+        /// <summary>Translational spring-damper combined element.</summary>
+        TranslationalSpringDamper,
+
+        // === Rotational Friction and Stops ===
+
+        /// <summary>Rotational friction with Coulomb, viscous, and Stribeck effects.</summary>
+        RotationalFriction,
+        /// <summary>Translational friction with Coulomb, viscous, and Stribeck effects.</summary>
+        TranslationalFriction,
+        /// <summary>Hard stop limiting rotational travel between two angular bounds.</summary>
+        RotationalHardStop,
+        /// <summary>Hard stop limiting translational travel between two linear bounds.</summary>
+        TranslationalHardStop,
+
+        // === Sources and Sensors ===
+
+        /// <summary>Ideal torque source (rotational).</summary>
+        IdealTorqueSource,
+        /// <summary>Ideal angular velocity source (rotational).</summary>
+        IdealAngularVelocitySource,
+        /// <summary>Ideal force source (translational).</summary>
+        IdealForceSource,
+        /// <summary>Ideal translational velocity source.</summary>
+        IdealTranslationalVelocitySource,
+        /// <summary>Torque sensor measuring rotational torque.</summary>
+        TorqueSensor,
+        /// <summary>Angular velocity sensor.</summary>
+        AngularVelocitySensor,
+        /// <summary>Force sensor measuring translational force.</summary>
+        ForceSensor,
+        /// <summary>Translational velocity sensor.</summary>
+        TranslationalVelocitySensor,
+        /// <summary>Rotational motion sensor (angle + velocity + acceleration).</summary>
+        RotationalMotionSensor,
+        /// <summary>Translational motion sensor (position + velocity + acceleration).</summary>
+        TranslationalMotionSensor,
+        /// <summary>Rotational power sensor measuring torque × angular velocity.</summary>
+        RotationalPowerSensor,
+        /// <summary>Translational power sensor measuring force × velocity.</summary>
+        TranslationalPowerSensor,
+
+        // === References ===
+
+        /// <summary>Rotational reference (ground / mechanical frame).</summary>
+        RotationalReference,
+        /// <summary>Translational reference (ground / mechanical frame).</summary>
+        TranslationalReference,
+
+        // === Transmission Templates ===
+
+        /// <summary>Automated manual transmission model.</summary>
+        AutomatedManualTransmission,
+        /// <summary>Continuously variable transmission (CVT) model.</summary>
+        ContinuouslyVariableTransmission,
+        /// <summary>Dual-clutch transmission model.</summary>
+        DualClutchTransmission,
+
+        // === Couplings (Mechanical-to-Mechanical) ===
+
+        /// <summary>Rotational-to-translational converter (lead screw, belt, etc.).</summary>
+        RotationalToTranslationalConverter,
+        /// <summary>Wheel and axle converting rotational to translational motion.</summary>
+        WheelAndAxle,
+
+        // === Utilities ===
+
+        /// <summary>Solver configuration for driveline mechanisms.</summary>
+        SolverConfiguration,
+        /// <summary>Simscape bus for bundling physical connections.</summary>
+        ConnectionBus
+    }
+
     #endregion
 }

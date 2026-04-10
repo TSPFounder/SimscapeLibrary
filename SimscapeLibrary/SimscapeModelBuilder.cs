@@ -4,6 +4,7 @@ using System.Linq;
 using Simulation;
 using CommunityMaker.Simscape;
 
+#region Example
 /*  Example Usage:
  * var model = SimscapeModelBuilder.Create("HybridPowertrain")
     .WithVersion("1.0")
@@ -36,6 +37,7 @@ using CommunityMaker.Simscape;
         el.AddPowerSource("Battery", PowerSourceType.Battery, 400);
     })
     .Build(); * */
+#endregion
 
 namespace SimscapeLibrary
 {
@@ -292,6 +294,355 @@ namespace SimscapeLibrary
 
         #endregion
 
+        #region File Declarations
+
+        /// <summary>
+        /// Associates a <see cref="SimscapeModelFile"/> with the model. Creates one if not already set.
+        /// </summary>
+        public SimscapeModelBuilder WithModelFile(string fileName, string directoryPath)
+        {
+            _model.ModelFile = new SimscapeModelFile(fileName, directoryPath);
+            return this;
+        }
+
+        /// <summary>
+        /// Associates a pre-configured <see cref="SimscapeModelFile"/> with the model.
+        /// </summary>
+        public SimscapeModelBuilder WithModelFile(SimscapeModelFile modelFile)
+        {
+            _model.ModelFile = modelFile;
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a domain in the model file with default Across/Through variables.
+        /// Writes the domain into the file's Domains collection and assigns it to
+        /// a reference component registered in the file.
+        /// </summary>
+        public SimscapeModelBuilder DeclareDomain(DomainType type, Action<SimscapeDomain>? configure = null)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var domain = new SimscapeDomain(type.ToString(), type);
+            configure?.Invoke(domain);
+
+            file.AddDomain(domain);
+
+            var refComponent = new SimscapeComponent($"{type}_DomainRef", SimscapeComponent.ComponentType.Reference)
+            {
+                Domain = domain
+            };
+            file.AddComponent(refComponent);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a pre-configured domain in the model file.
+        /// Writes the domain into the file's Domains collection and assigns it to
+        /// a reference component registered in the file.
+        /// </summary>
+        public SimscapeModelBuilder DeclareDomain(SimscapeDomain domain)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            file.AddDomain(domain);
+
+            var refComponent = new SimscapeComponent($"{domain.Name}_DomainRef", SimscapeComponent.ComponentType.Reference)
+            {
+                Domain = domain
+            };
+            file.AddComponent(refComponent);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a component in the model file with optional inline configuration.
+        /// Writes the component into both the model's component list and the file's
+        /// Components collection.
+        /// </summary>
+        public SimscapeModelBuilder DeclareComponent(
+            string name,
+            SimscapeComponent.ComponentType type,
+            Action<SimscapeComponent>? configure = null)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = new SimscapeComponent(name, type)
+            {
+                Domain = _model.Domain,
+                CurrentSimscapeModel = _model
+            };
+            configure?.Invoke(component);
+
+            _model.AddComponent(component);
+            file.AddComponent(component);
+
+            // If the component's domain isn't yet in the file, add it
+            if (component.Domain is not null && file.FindDomain(component.Domain.Name) is null)
+                file.AddDomain(component.Domain);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a pre-built component in the model file.
+        /// Writes the component into both the model's component list and the file's
+        /// Components collection.
+        /// </summary>
+        public SimscapeModelBuilder DeclareComponent(SimscapeComponent component)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            component.CurrentSimscapeModel = _model;
+            _model.AddComponent(component);
+            file.AddComponent(component);
+
+            if (component.Domain is not null && file.FindDomain(component.Domain.Name) is null)
+                file.AddDomain(component.Domain);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a node on a named component in the model file.
+        /// Writes the node into the file's Nodes collection and adds a matching
+        /// conserving port on the target component.
+        /// </summary>
+        public SimscapeModelBuilder DeclareNode(
+            string componentName,
+            string nodeName,
+            DomainType? domain = null)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareNode: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var nodeType = domain ?? component.Domain?.Type ?? DomainType.Electrical;
+            var node = new SimscapeNode(nodeName, nodeType);
+
+            component.AddPort(nodeName, PortDirection.Conserving);
+
+            var port = component.FindPort(nodeName);
+            if (port is not null)
+                node.AddPort(port);
+
+            file.AddNode(node);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a reference (ground) node on a named component in the model file.
+        /// Writes the node into the file's Nodes collection with IsReference = true.
+        /// </summary>
+        public SimscapeModelBuilder DeclareReferenceNode(
+            string componentName,
+            string nodeName,
+            DomainType? domain = null)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareReferenceNode: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var nodeType = domain ?? component.Domain?.Type ?? DomainType.Electrical;
+            var node = SimscapeNode.CreateReference(nodeName, nodeType);
+
+            component.AddPort(nodeName, PortDirection.Conserving);
+
+            var port = component.FindPort(nodeName);
+            if (port is not null)
+                node.AddPort(port);
+
+            file.AddNode(node);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares an equation on a named component in the model file.
+        /// Writes a <see cref="SimscapeEquation"/> into the file's Equations collection
+        /// and adds the expression string to the component's equation list.
+        /// </summary>
+        public SimscapeModelBuilder DeclareEquation(
+            string componentName,
+            string equationName,
+            string expression,
+            EquationType type = EquationType.Algebraic)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareEquation: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var equation = new SimscapeEquation(equationName, expression, type)
+            {
+                OwningComponent = component
+            };
+
+            component.AddEquation(expression);
+            file.AddEquation(equation);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a conditional equation on a named component in the model file.
+        /// Writes a conditional <see cref="SimscapeEquation"/> into the file's Equations collection.
+        /// </summary>
+        public SimscapeModelBuilder DeclareConditionalEquation(
+            string componentName,
+            string equationName,
+            string expression,
+            string condition)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareConditionalEquation: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var equation = new SimscapeEquation(equationName, expression, condition)
+            {
+                OwningComponent = component
+            };
+
+            component.AddEquation($"if ({condition}) {{ {expression} }}");
+            file.AddEquation(equation);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a variable on a named component in the model file.
+        /// Writes a <see cref="SimscapeVariable"/> into the file's Variables collection
+        /// and adds a matching <see cref="ComponentVariable"/> to the component.
+        /// </summary>
+        public SimscapeModelBuilder DeclareVariable(
+            string componentName,
+            string variableName,
+            string unit,
+            VariableKind kind = VariableKind.Internal,
+            double initialValue = 0.0)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareVariable: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var variable = new SimscapeVariable(variableName, unit, kind, initialValue);
+
+            component.AddVariable(variableName, unit, initialValue);
+            file.AddVariable(variable);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a parameter on a named component in the model file.
+        /// Writes a <see cref="SimscapeParameter"/> into the file's Parameters collection
+        /// and adds a matching <see cref="ComponentParameter"/> to the component.
+        /// </summary>
+        public SimscapeModelBuilder DeclareParameter(
+            string componentName,
+            string parameterName,
+            string unit,
+            double defaultValue = 0.0)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareParameter: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var parameter = new SimscapeParameter(parameterName, unit, defaultValue);
+
+            component.AddParameter(parameterName, unit, defaultValue);
+            file.AddParameter(parameter);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a bounded parameter on a named component in the model file.
+        /// Writes a <see cref="SimscapeParameter"/> with min/max bounds into the file's
+        /// Parameters collection and adds a matching <see cref="ComponentParameter"/>
+        /// to the component.
+        /// </summary>
+        public SimscapeModelBuilder DeclareParameter(
+            string componentName,
+            string parameterName,
+            string unit,
+            double defaultValue,
+            double min,
+            double max)
+        {
+            EnsureModelFile();
+            var file = _model.ModelFile!;
+
+            var component = FindFileComponent(componentName);
+            if (component is null)
+            {
+                _errors.Add($"DeclareParameter: component '{componentName}' not found in model file.");
+                return this;
+            }
+
+            var parameter = new SimscapeParameter(parameterName, unit, defaultValue, min, max);
+
+            component.AddParameter(parameterName, unit, defaultValue);
+            file.AddParameter(parameter);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Declares a shared function in the model file.
+        /// Writes the function into the file's SharedFunctions collection.
+        /// </summary>
+        public SimscapeModelBuilder DeclareSharedFunction(SimscapeFunction function)
+        {
+            EnsureModelFile();
+            _model.ModelFile!.AddSharedFunction(function);
+            return this;
+        }
+
+        #endregion
+
         #region Build
 
         /// <summary>
@@ -315,8 +666,24 @@ namespace SimscapeLibrary
             _errors.Clear();
 
             ResolveConnections();
+            SyncModelFileContents();
             ValidateModel();
+            ValidateModelFile();
             ValidateAddins();
+
+            if (_errors.Count > 0)
+            {
+                model = null;
+                errors = _errors.AsReadOnly();
+                return false;
+            }
+
+            // Persist declarations to disk if the file has unsaved changes
+            if (_model.ModelFile is { IsDirty: true })
+            {
+                if (!_model.ModelFile.Save())
+                    _errors.Add($"Failed to save model file to '{_model.ModelFile.FullPath}'.");
+            }
 
             if (_errors.Count > 0)
             {
@@ -347,6 +714,7 @@ namespace SimscapeLibrary
             _model.LibraryType = SimscapeModel.LibraryTypeEnum.General;
             _model.Components.Clear();
             _model.Ports.Clear();
+            _model.ModelFile = null;
             _model.ResetSimulationParameters();
             _addins.Clear();
             _deferredConnections.Clear();
@@ -357,6 +725,19 @@ namespace SimscapeLibrary
         #endregion
 
         #region Validation (private)
+
+        private void EnsureModelFile()
+        {
+            _model.ModelFile ??= new SimscapeModelFile(
+                $"{(_model.Name.Length > 0 ? _model.Name : "Untitled")}.ssc",
+                _model.Path.Length > 0 ? _model.Path : Environment.CurrentDirectory);
+        }
+
+        private SimscapeComponent? FindFileComponent(string name)
+        {
+            return _model.ModelFile?.FindComponent(name)
+                ?? _model.FindComponent(name);
+        }
 
         private void ResolveConnections()
         {
@@ -373,6 +754,29 @@ namespace SimscapeLibrary
                 if (a is not null && b is not null)
                     a.Connect(b);
             }
+        }
+
+        private void SyncModelFileContents()
+        {
+            if (_model.ModelFile is null)
+                return;
+
+            var file = _model.ModelFile;
+
+            // Ensure the model is registered in its own file
+            if (!file.Models.Contains(_model))
+                file.AddModel(_model);
+
+            // Ensure all model components are also in the file
+            foreach (var component in _model.Components)
+            {
+                if (file.FindComponent(component.Name) is null)
+                    file.AddComponent(component);
+            }
+
+            // Ensure the model's domain is in the file
+            if (_model.Domain is not null && file.FindDomain(_model.Domain.Name) is null)
+                file.AddDomain(_model.Domain);
         }
 
         private void ValidateModel()
@@ -397,6 +801,16 @@ namespace SimscapeLibrary
                 if (string.IsNullOrWhiteSpace(component.Name))
                     _errors.Add("A component is missing a name.");
             }
+        }
+
+        private void ValidateModelFile()
+        {
+            if (_model.ModelFile is null)
+                return;
+
+            var fileErrors = _model.ModelFile.GetValidationErrors();
+            foreach (var error in fileErrors)
+                _errors.Add($"Model file: {error}");
         }
 
         private void ValidateAddins()
